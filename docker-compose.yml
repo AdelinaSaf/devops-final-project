@@ -1,0 +1,12 @@
+services:
+  pdf-service:
+    build:
+      context: ./pdf-service
+    image: my-pdf-service
+    ports:
+      - "5050:5050"  # Проброс порта на хост
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5050/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
