@@ -1,21 +1,15 @@
-# Этап сборки
+# Этап 1: Сборка
 FROM maven:3.9.10-eclipse-temurin-21 AS builder
-
-# Устанавливаем рабочую директорию
-WORKDIR /workspace/app
-
-# Копируем только POM файл сначала (для кэширования зависимостей)
+WORKDIR /app
 COPY pom.xml .
-
-
-# Копируем исходный код
-COPY src src
-
-# Собираем проект
+COPY src ./src
 RUN mvn clean package -DskipTests
 
-# Финальный образ
-FROM openjdk:21-slim
-VOLUME /tmp
-COPY --from=builder /workspace/app/target/*.jar app.jar
-ENTRYPOINT ["java", "-jar","/app.jar"]
+# Этап 2: Запуск
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+# Копируем WAR файл (он теперь исполняемый благодаря spring-boot-maven-plugin)
+COPY --from=builder /app/target/culinaryExchange-1.0-SNAPSHOT.war app.war
+
+ENTRYPOINT ["java", "-jar", "app.war"]

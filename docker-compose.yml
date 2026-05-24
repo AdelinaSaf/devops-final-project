@@ -1,12 +1,88 @@
 services:
-  pdf-service:
+  culinary-app:
+    image: culinary-exchange:${IMAGE_TAG:-latest}
     build:
-      context: ./pdf-service
-    image: my-pdf-service
+      context: ./CulinaryService
+      dockerfile: Dockerfile
     ports:
-      - "5050:5050"  # Проброс порта на хост
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/culinaryExchangeS2
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_FLYWAY_ENABLED=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      loki:
+        condition: service_started
+    networks:
+      - logging-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+  postgres:
+    image: postgres:15-alpine
+    container_name: culinary-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: culinaryExchangeS2
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - logging-net
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:5050/health" ]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U postgres -d culinaryExchangeS2"]
+      interval: 5s
       timeout: 5s
-      retries: 3
+      retries: 5
+  # Loki - централизованное хранилище логов
+  loki:
+    image: grafana/loki:2.9.0
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki:/etc/loki
+    command: -config.file=/etc/loki/loki-config.yaml
+    networks:
+      - logging-net
+
+  # Promtail - сбор логов с контейнеров
+  promtail:
+    image: grafana/promtail:2.9.0
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/promtail:/etc/promtail
+    command: -config.file=/etc/promtail/promtail-config.yaml
+    depends_on:
+      - loki
+    networks:
+      - logging-net
+
+  # Grafana - визуализация логов
+  grafana:
+    image: grafana/grafana:10.2.0
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - loki
+    networks:
+      - logging-net
+
+networks:
+  logging-net:
+    driver: bridge
+
+volumes:
+  grafana-data:
+  pg_data:

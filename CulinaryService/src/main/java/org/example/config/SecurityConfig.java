@@ -26,6 +26,12 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(
+                            jakarta.servlet.DispatcherType.FORWARD,
+                            jakarta.servlet.DispatcherType.INCLUDE,
+                            jakarta.servlet.DispatcherType.ERROR
+                        ).permitAll()
+                        .requestMatchers("/WEB-INF/**", "/styles/**", "/images/**", "/css/**", "/js/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/recipe/create/**", "/cookbook", "/favoriteRecipes", "/saveToFavorites").authenticated()
                         .anyRequest().permitAll()
