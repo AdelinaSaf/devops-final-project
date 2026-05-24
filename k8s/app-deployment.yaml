@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: culinary-app
+  namespace: adelina24052026
+  labels:
+    app: culinary-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: culinary-app
+  template:
+    metadata:
+      labels:
+        app: culinary-app
+    spec:
+      containers:
+      - name: culinary-app
+        image: culinary-exchange:final-test  # Образ из Docker
+        imagePullPolicy: Never  # Используем локальный образ
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: culinary-config
+              key: SPRING_DATASOURCE_URL
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: culinary-config
+              key: SPRING_DATASOURCE_USERNAME
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: culinary-config
+              key: SPRING_DATASOURCE_PASSWORD
+        - name: SPRING_FLYWAY_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: culinary-config
+              key: SPRING_FLYWAY_ENABLED
+        readinessProbe:
+          httpGet:
+            path: /culinary/login
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /culinary/login
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 15
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"

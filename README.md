@@ -120,3 +120,55 @@ Grafana через Loki отображает логи всех сервисов 
 **Все 5 контейнеров централизованно логируют в Loki** — это доказывает, что система сбора логов работает корректно для всего стека приложения.
 
 ---
+
+## Дополнительное задание: Развёртывание в Minikube
+
+Приложение развёрнуто в Kubernetes через манифесты. Namespace: adelina24052026
+
+1. Запуск Minikube и сборка образа
+Запуск кластера Minikube и сборка образа
+```bash
+# Запуск Minikube
+minikube start --memory=4096 --cpus=2
+
+# Сборка образа
+./build.sh -t final-test
+```
+![Minikube start](screenshots/minikube_start.png)
+
+2. Применение манифестов
+![Apply](screenshots/apply.png)
+
+3. Namespace
+Namespace adelina24052026 создан и активен
+```bash
+kubectl get namespaces
+```
+4. Pod'ы
+Оба pod'а в статусе 1/1 Running: приложение и база данных работают корректно
+```bash
+kubectl get pods -n adelina24052026
+```
+![Get pods](screenshots/get_pods.png)
+
+5. Services
+Service culinary-service типа NodePort (8080:30080), postgres-service типа ClusterIP
+```bash
+kubectl get services -n adelina24052026
+```
+![Get services](screenshots/get_services.png)
+
+6. Логи приложения
+Успешный старт приложения: подключение к БД, миграции Flyway, обработка запросов Spring Security
+```bash 
+kubectl logs -n adelina24052026 deployment/culinary-app --tail=50
+```
+![Minikubelogs](screenshots/minikube_logs.png)
+
+Технологии
+Backend: Spring Boot 3, Spring Security, Spring Data JPA, Hibernate
+Database: PostgreSQL 15, Flyway migrations
+Frontend: JSP, JSTL, CSS
+DevOps: Docker, Docker Compose, Kubernetes (Minikube)
+Logging: Loki, Promtail, Grafana
+Build: Maven, Multistage Dockerfile
